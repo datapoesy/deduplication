@@ -1,0 +1,183 @@
+---
+title: "R Notebook Data Sanitization"
+output: html_notebook
+---
+
+This Notebook illustrates how the customer records are debased to reflect nuances of real-world data.
+
+####Setup the Environment
+
+Set up the root folder, load libraries and helper functions.
+```{r}
+knitr::opts_knit$set(root.dir = "F:/GitHub/deduplication/src")
+source("config/libraries.R")
+source("lib/helpers.R")
+
+```
+
+
+####Read the original dataset
+Read the 100% clean customer records from the previous notebook. This represents an ideal scenario.  This dataset has to be sanitized to reflect quality issues in the real-world scenario.
+
+```{r}
+orig.ds <- read.csv(file="data/base.ds.200k.csv", stringsAsFactors = FALSE)
+
+```
+
+####Create clones to reflect scenarios in real-world data
+
+Create a data frame to store duplicated records
+```{r}
+dupli.ds <- data.frame(matrix(0, ncol = ncol(orig.ds), nrow = 0))
+colnames(dupli.ds) <- colnames(orig.ds)
+```
+
+Reorganizing the datatype of certain columns
+
+```{r}
+dupli.ds$someid <- as.character(dupli.ds$someid)
+dupli.ds$mnumber <- as.character(dupli.ds$mnumber)
+dupli.ds$hnumber <- as.character(dupli.ds$hnumber)
+dupli.ds$birth.date <- as.character(dupli.ds$birth.date)
+dupli.ds$postcode <- as.character(dupli.ds$postcode)
+```
+
+
+#####Create a dataframe to store non-duplicated records
+```{r}
+non.dupli.ds <- dupli.ds
+
+```
+
+
+#####Set a percentage value for the number of customer clones to be created.
+Within this, 4% of the original dataset will be cloned.  These are duplicate records that would need to be identified correctly by the deduplication engine.
+
+The cloned customer records will have the same address.
+```{r}
+p <- 4
+temp.ds <- clonePerson(orig.ds, p)
+dupli.ds <- rbind(dupli.ds, temp.ds$clones)
+
+dupli.ds <- dupli.ds[!duplicated(dupli.ds$recoid),]
+```
+
+
+#####Duplicate Records for identical Twins living in the same address,
+```{r}
+pt <- 0.25
+
+#also pass the list of record ids that has been used.
+temp.ds <- createTwins(temp.ds$ds.99, pt)
+non.dupli.ds <- rbind(non.dupli.ds, temp.ds$twins) # Non-duplicates means individual people
+non.dupli.ds <- non.dupli.ds[!duplicated(non.dupli.ds$recoid),]
+
+```
+
+
+
+#####Duplicate Records for neighbors living in the same apartment,
+
+```{r}
+pn <- 0.04
+## also pass the list of record ids that has been used.
+temp.ds <- createNeighbors(temp.ds$ds.99, pn)
+non.dupli.ds <- rbind(non.dupli.ds, temp.ds$neighbors) # Non-duplicates means individual people
+non.dupli.ds <- non.dupli.ds[!duplicated(non.dupli.ds$recoid),]
+
+```
+
+#####Duplicate Records for Married couples living in the same address
+The assumption is that 15% of the customer base will be married couples living in the same address.   This can be changed by changing the value for "pc".
+```{r}
+# % of couples in the loan availing population = 50%
+# % of couples living in the same address = 80%
+# Combined percentage of the above = 40%
+pc <- 15 
+temp.ds <- createCouples(temp.ds$ds.99, pc)
+non.dupli.ds <- rbind(non.dupli.ds, temp.ds$couples)
+
+```
+
+#####The duplicate records and bound to the original dataset
+All the above records are bound to the original dataset.
+```{r}
+orig.ds <- rbind(orig.ds, dupli.ds)
+orig.ds <- rbind(orig.ds,non.dupli.ds)
+
+record.count <- nrow(orig.ds)
+```
+
+#####The new record count
+The new record count is 267,315. 
+
+####Introduce other kinds of errors that could be prevalent in real-world data.
+
+
+#####Create Typographical errors name to simulate spelling mistakes
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+pe <- 0.04
+orig.ds <- makeTypos(orig.ds, "John", "Jon", pe)
+orig.ds <- makeTypos(orig.ds, "Thompson", "Thomson", pe)
+orig.ds <- makeTypos(orig.ds, "tt", "t", pe)
+orig.ds <- makeTypos(orig.ds, "ss", "s", pe)
+```
+
+
+simulate missing email id - write into the base dataset
+```{r message=FALSE, warning=FALSE, include=FALSE}
+p <- 4
+orig.ds$email[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+
+```
+
+simulate missing home phone numbers
+```{r message=FALSE, warning=FALSE, include=FALSE}
+orig.ds$hnumber[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+
+```
+
+Missing Mobile phone numbers
+```{r message=FALSE, warning=FALSE, include=FALSE}
+orig.ds$mnumber[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+
+```
+
+Simulate missing postcodes
+```{r message=FALSE, warning=FALSE, include=FALSE}
+orig.ds$postcode[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+
+```
+
+Simulate Missing Address 1 from Address
+```{r message=FALSE, warning=FALSE, include=FALSE}
+orig.ds$addr1[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+
+```
+
+simulate Missing Address 2 from Address
+```{r message=FALSE, warning=FALSE, include=FALSE}
+orig.ds$addr2[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+
+```
+
+Simulate Missing County Name from Address
+```{r message=FALSE, warning=FALSE, include=FALSE}
+orig.ds$county[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+
+```
+
+Simulate Missing City Name from Address
+```{r message=FALSE, warning=FALSE, include=FALSE}
+orig.ds$cityname[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+
+```
+
+####Write the Sanitized file
+Write the sanitized file into a .csv format to be reused later.  
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+write.csv(orig.ds,file="data/orig.ds.real.csv", row.names = FALSE ,quote=c(1:15) )
+
+```
+

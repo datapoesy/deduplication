@@ -1,0 +1,230 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r setup}
+
+knitr::opts_knit$set(root.dir = "F:/GitHub/deduplication/src")
+source("config/libraries.R")
+source("lib/helpers.R")
+```
+
+#####Convert a local df to ffdf
+```{r}
+
+xclass <- c("factor","factor","factor","factor","factor",
+            "factor","factor","factor","factor","factor",
+            "factor","factor","factor","factor","factor",
+            "integer","integer","integer")
+
+getwd()
+## Read the sanitized dataset
+base.ds <- read.csv(file="data/orig.ds.real.csv", stringsAsFactors = TRUE)
+
+base.ds <- base.ds[,c(-1)] #dropping the  first column
+```
+
+#####Set the number of records to be sampled from the sanitized dataset
+
+```{r}
+ds.count <- 1000
+```
+
+
+
+#####Sample dataset from the original 200K records
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+ds.00 <-  base.ds[sample(nrow(base.ds),ds.count),]
+
+#subset records associated with couples, twins, and neighbours
+ds.00.C <- subset(ds.00, grepl('C',ds.00$recoid))
+ds.00.T <- subset(ds.00, grepl('T',ds.00$recoid))
+ds.00.N <- subset(ds.00, grepl('N',ds.00$recoid))
+ds.00.D <- subset(ds.00, grepl('D',ds.00$recoid))
+
+#remove the above subsets from the sample keeping only duplicates
+unmatched <- anti_join(ds.00, ds.00.C)
+unmatched <- anti_join(unmatched, ds.00.T)
+unmatched <- anti_join(unmatched, ds.00.N)
+
+#Remove the D and identify the duplicates
+unmatched$recoid <- gsub(" D", "\\", unmatched$recoid)
+unmatched$recoid <- trimws(unmatched$recoid, which = c("both"))
+
+orig.dupes <- nrow(unmatched[duplicated(unmatched$recoid), ])
+
+alt.ds.count <- nrow(ds.00.C)+nrow(ds.00.T)+nrow(ds.00.N)+nrow(ds.00.D)
+#subset(unmatched, grepl('D',unmatched$recoid)) ## To verify whether all D has been removed.
+
+
+```
+
+Write the current dataframe to a csv file for reference
+
+```{r}
+write.csv(ds.00,file="data/ds.00.5k.csv", row.names = FALSE ,quote=c(1:15) )
+
+```
+
+
+#####Converting to a ffbase object format
+Also setting the temporary directory to write the intermediate files.
+```{r}
+
+ds.00=as.ffdf(ds.00)
+
+options(fftempdir = "F:/GitHub/deduplication/src/data/temp")
+
+colnames(ds.00) <- c("X_recoid_","X_someid_","X_firstname_","X_lastname_","X_gender_",
+                   "X_birth_date_","X_email_","X_mnumber_","X_hnumber_","X_addr1_",
+                   "X_addr2_","X_cityname_","X_postcode_","X_county_","X_nis_",
+                   "X_b_year_","X_b_month_","X_b_day_")
+```
+
+#####Record the start time
+Create the comparison vectors.
+```{r}
+
+# trace("RLBigDataDedup",edit=TRUE) # Modify the function RLBigDataDedup
+depup.st.time <- Sys.time()
+rpairs.00 <- RLBigDataDedup(ds.00,blockfld = list(4,c(16,17,18)),phonetic = c(3,4),exclude = c("X_recoid_","X_someid_", "X_birth_date_","X_mnumber_","X_hnumber_","X_gender_"))
+depup.end.time <- Sys.time()
+time.taken <- depup.end.time - depup.st.time
+
+```
+
+#####Record a measurement of data quality
+```{r}
+
+data.quality <- round(alt.ds.count/ds.count *100,2)
+
+```
+
+
+#####Supervised clasification with Minimal Training Set
+
+```{r}
+#cl.results.00 <- as.data.frame(matrix(0,ncol=9,nrow=1))
+
+#colnames(cl.results.00) <- c("No.","Sample.Count","Total.Pairs","Orig.Dupes",c()                             "Ident.Dupes","False Positives","Quality.Perc","Accuracy","Train.Count")
+```
+
+
+#####Get Minimal Training Pairs
+```{r}
+#minTrain.00 <- getMinimalTrain(rpairs = rpairs.00, nEx = 1)
+
+```
+
+#####edit the pairs inline
+This is commented out since the editing is done in excel.
+```{r}
+#minTrain.00 <- editMatch(minTrain.00)
+
+```
+
+Get pairs to export to excel
+Add an is_match column for user entry
+
+```{r}
+#editable.pairs <- getPairs(minTrain.00) 
+#editable.pairs$is_match <- "" 
+
+#trained.set.fn <- paste("data/",ds.count,"trained.set.csv",sep="")
+
+#write.csv(editable.pairs,file=trained.set.fn, row.names = FALSE ) 
+
+```
+
+
+#####The updated Excel by the user needs to be fed back into the system
+=============================================================================================
+```{r}
+edited.pairs <- read.csv(file=trained.set.fn, stringsAsFactors=FALSE )  
+edited.pairs <- edited.pairs[!apply(is.na(edited.pairs) | edited.pairs == "", 1, all),] # The blank line that separates rows is removed
+
+edited.pairs <- edited.pairs[,c("id","is_match")] #  the relevant columns from the edited excel file
+
+is.match.ds <- as.data.frame(matrix(NA,ncol=3,nrow=1))  #create dataframe to take input from excel
+colnames(is.match.ds) <- c("id1", "id2","is_match")
+
+#Take only the relevant columns from user input
+for(i in 1:nrow(edited.pairs)){
+  alt.row = i+1
+  is.match.ds[i,1] <- edited.pairs[i,1]
+  is.match.ds[i,2] <- edited.pairs[alt.row,1]
+  is.match.ds[i,3] <- edited.pairs[i,2]
+}
+is.match.ds <- is.match.ds[complete.cases(is.match.ds), ]
+
+#Load the trained set into the engine
+for(i in 1:nrow(is.match.ds)){
+  if(minTrain.00$pairs[i,1]==is.match.ds[i,1] && minTrain.00$pairs[i,2]== is.match.ds[i,2]){
+    minTrain.00$pairs[i,c("is_match")] <- is.match.ds[i,c("is_match")]
+  }
+}
+```
+
+#####Loading weights and classifying
+```{r}
+count.train <- nrow(minTrain.00$pairs)  
+rpairs.00 <- epiWeights(rpairs.00, e=0.01, f =getFrequencies(rpairs.00))
+model.00 <- trainSupv(minTrain.00, method = "rpart",minsplit=1) # Training method is passed as argument
+results.00 <- classifySupv(model.00, newdata = rpairs.00)
+
+```
+#####Get the identified pairs
+
+```{r}
+ident.pairs.00 <- getPairs(results.00,filter.link = "link")
+
+results.fn <- paste("data/",ds.count,"results.00.csv",sep="")
+
+write.csv(ident.pairs.00,file=results.fn)
+
+
+```
+
+#####Recording Results 
+```{r}
+ident.dupes <-unlist(summary(results.00)[9])
+ident.dupes <- unname(ident.dupes)
+
+pairs.count <- unlist(summary(rpairs.00)[7])
+pairs.count <- unname(pairs.count)
+
+false.pos <-0
+if(ident.dupes>orig.dupes){ false.pos <- ident.dupes - orig.dupes }
+
+#set the value of the row to capture results
+i=4
+
+cl.results.00[i, 1] <- i
+cl.results.00[i, 2] <- ds.count
+cl.results.00[i, 3] <- pairs.count
+cl.results.00[i, 4] <- orig.dupes
+cl.results.00[i, 5] <- ident.dupes
+
+cl.results.00[i, 6] <- false.pos
+cl.results.00[i, 7] <- data.quality
+cl.results.00[i, 8] <- round(ident.dupes/orig.dupes*100,2)
+cl.results.00[i, 9] <- count.train
+
+#c("No.","Sample.Count","Total.Pairs","Orig.Dupes", "Ident.Dupes","False Positives","Quality.Perc","Accuracy","Train.Count")
+
+```
+ 
+#####Save the results file
+```{r}
+
+summary.fn <- paste("data/summary.csv",sep="")
+
+write.csv(cl.results.00,file=summary.fn)
+
+
+```

@@ -1,0 +1,44 @@
+You can label chapter and section titles using `{#label}` after them, e.g., we can reference Chapter \@ref(intro). If you do not manually label them, there will be automatic labels anyway, e.g., Chapter \@ref(methods).
+
+Figures and tables with captions will be placed in `figure` and `table` environments, respectively.
+
+```{r nice-fig, fig.cap='Here is a nice figure!', out.width='80%', fig.asp=.60, fig.align='center'}
+par(mar = c(4, 4, .1, .1))
+plot(pressure, type = 'b', pch = 19)
+```
+
+Reference a figure by its code chunk label with the `fig:` prefix, e.g., see Figure \@ref(fig:nice-fig). Similarly, you can reference tables generated from `knitr::kable()`, e.g., see Table \@ref(tab:nice-tab).
+
+```{r nice-tab, tidy=FALSE}
+knitr::kable(
+  head(iris, 20), caption = 'Here is a nice table!',
+  booktabs = TRUE
+)
+```
+
+You can write citations, too. For example, we are using the **bookdown** package [@R-bookdown] in this sample book, which was built on top of R Markdown and **knitr** [@xie2015].
+
+
+---
+output: pdf_document
+---
+
+
+
+df.isbsg5 <- subset( isbsg2, select = c(-fp.stand ))
+df.isbsg5.newdev <- df.isbsg5[ which(df.isbsg5$dev.type=='New Development'),]
+df.isbsg5.enhance <- df.isbsg5[ which(df.isbsg5$dev.type=='Enhancement'),]
+df.isbsg5.redev <- df.isbsg5[ which(df.isbsg5$dev.type=='Re-development'),]
+
+df.isbsg5 <- subset( df.isbsg5, select = c(-dev.type ))
+df.isbsg5.newdev <- subset( df.isbsg5.newdev, select = c(-dev.type ))
+df.isbsg5.enhance <- subset( df.isbsg5.enhance, select = c(-dev.type ))
+df.isbsg5.redev <- subset( df.isbsg5.redev, select = c(-dev.type ))
+
+
+descr.stat <- describeBy(df.isbsg5,df.isbsg5$ind.sector)
+descr.stat
+
+
+
+

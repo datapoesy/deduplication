@@ -1,7 +1,0 @@
-book_filename: "Hermes-log-analysis.Rmd"
-chapter_name: "CHAPTER "
-before_chapter_script: ["config/libraries.R", "lib/helpers.R","munge/01-A.R"]
-output_dir: "book-temp"
-clean: ["my-book.bbl", "R-packages.bib"]
-#rmd_files: [ "abstract.Rmd", "intro.Rmd"]
-

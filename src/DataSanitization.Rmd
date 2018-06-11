@@ -8,7 +8,7 @@ This Notebook illustrates how the customer records are debased to reflect nuance
 ####Setup the Environment
 
 Set up the root folder, load libraries and helper functions.
-```{r}
+```{r, message=FALSE}
 knitr::opts_knit$set(root.dir = "F:/GitHub/deduplication/src")
 source("config/libraries.R")
 source("lib/helpers.R")
@@ -20,7 +20,7 @@ source("lib/helpers.R")
 Read the 100% clean customer records from the previous notebook. This represents an ideal scenario.  This dataset has to be sanitized to reflect quality issues in the real-world scenario.
 
 ```{r}
-orig.ds <- read.csv(file="data/base.ds.200k.csv", stringsAsFactors = FALSE)
+modified.data <- read.csv(file="data/base.ds.200k.csv", stringsAsFactors = FALSE)
 
 ```
 
@@ -28,8 +28,8 @@ orig.ds <- read.csv(file="data/base.ds.200k.csv", stringsAsFactors = FALSE)
 
 Create a data frame to store duplicated records
 ```{r}
-dupli.ds <- data.frame(matrix(0, ncol = ncol(orig.ds), nrow = 0))
-colnames(dupli.ds) <- colnames(orig.ds)
+dupli.ds <- data.frame(matrix(0, ncol = ncol(modified.data), nrow = 0))
+colnames(dupli.ds) <- colnames(modified.data)
 ```
 
 Reorganizing the datatype of certain columns
@@ -55,8 +55,10 @@ Within this, 4% of the original dataset will be cloned.  These are duplicate rec
 
 The cloned customer records will have the same address.
 ```{r}
-p <- 4
-temp.ds <- clonePerson(orig.ds, p)
+# p <- 4 #Experiment1
+# p <- 8 #Experiment2
+p <- 12
+temp.ds <- clonePerson(modified.data, p)
 dupli.ds <- rbind(dupli.ds, temp.ds$clones)
 
 dupli.ds <- dupli.ds[!duplicated(dupli.ds$recoid),]
@@ -65,8 +67,9 @@ dupli.ds <- dupli.ds[!duplicated(dupli.ds$recoid),]
 
 #####Duplicate Records for identical Twins living in the same address,
 ```{r}
-pt <- 0.25
-
+# pt <- 0.25
+# pt <- 0.5 #Experiment2
+pt <- 0.75
 #also pass the list of record ids that has been used.
 temp.ds <- createTwins(temp.ds$ds.99, pt)
 non.dupli.ds <- rbind(non.dupli.ds, temp.ds$twins) # Non-duplicates means individual people
@@ -79,7 +82,9 @@ non.dupli.ds <- non.dupli.ds[!duplicated(non.dupli.ds$recoid),]
 #####Duplicate Records for neighbors living in the same apartment,
 
 ```{r}
-pn <- 0.04
+# pn <- 0.04 #experiment 1
+# pn <- 0.08 #Experiment2
+pn <- 0.12
 ## also pass the list of record ids that has been used.
 temp.ds <- createNeighbors(temp.ds$ds.99, pn)
 non.dupli.ds <- rbind(non.dupli.ds, temp.ds$neighbors) # Non-duplicates means individual people
@@ -93,7 +98,9 @@ The assumption is that 15% of the customer base will be married couples living i
 # % of couples in the loan availing population = 50%
 # % of couples living in the same address = 80%
 # Combined percentage of the above = 40%
-pc <- 15 
+#pc <- 15 #experiment 1
+# pc <- 20  #experiment 2
+pc <- 25
 temp.ds <- createCouples(temp.ds$ds.99, pc)
 non.dupli.ds <- rbind(non.dupli.ds, temp.ds$couples)
 
@@ -102,10 +109,10 @@ non.dupli.ds <- rbind(non.dupli.ds, temp.ds$couples)
 #####The duplicate records and bound to the original dataset
 All the above records are bound to the original dataset.
 ```{r}
-orig.ds <- rbind(orig.ds, dupli.ds)
-orig.ds <- rbind(orig.ds,non.dupli.ds)
+modified.data <- rbind(modified.data, dupli.ds)
+modified.data <- rbind(modified.data,non.dupli.ds)
 
-record.count <- nrow(orig.ds)
+record.count <- nrow(modified.data)
 ```
 
 #####The new record count
@@ -116,60 +123,64 @@ The new record count is 267,315.
 
 #####Create Typographical errors name to simulate spelling mistakes
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
-pe <- 0.04
-orig.ds <- makeTypos(orig.ds, "John", "Jon", pe)
-orig.ds <- makeTypos(orig.ds, "Thompson", "Thomson", pe)
-orig.ds <- makeTypos(orig.ds, "tt", "t", pe)
-orig.ds <- makeTypos(orig.ds, "ss", "s", pe)
+# pe <- 0.04 #experiment 1
+# pe <- 0.08 #Experiment2
+pe <- 0.12
+modified.data <- makeTypos(modified.data, "John", "Jon", pe)
+modified.data <- makeTypos(modified.data, "Thompson", "Thomson", pe)
+modified.data <- makeTypos(modified.data, "tt", "t", pe)
+modified.data <- makeTypos(modified.data, "ss", "s", pe)
 ```
 
 
 simulate missing email id - write into the base dataset
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-p <- 4
-orig.ds$email[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+# p <- 4 #experiment 1
+# p <- 6 #Experiment2
+p <- 8
+modified.data$email[sample(nrow(modified.data), nrow(modified.data) * p / 100)] <- ''
 
 ```
 
 simulate missing home phone numbers
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-orig.ds$hnumber[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+modified.data$hnumber[sample(nrow(modified.data), nrow(modified.data) * p / 100)] <- ''
 
 ```
 
 Missing Mobile phone numbers
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-orig.ds$mnumber[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+modified.data$mnumber[sample(nrow(modified.data), nrow(modified.data) * p / 100)] <- ''
 
 ```
 
 Simulate missing postcodes
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-orig.ds$postcode[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+modified.data$postcode[sample(nrow(modified.data), nrow(modified.data) * p / 100)] <- ''
 
 ```
 
 Simulate Missing Address 1 from Address
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-orig.ds$addr1[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+modified.data$addr1[sample(nrow(modified.data), nrow(modified.data) * p / 100)] <- ''
 
 ```
 
 simulate Missing Address 2 from Address
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-orig.ds$addr2[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+modified.data$addr2[sample(nrow(modified.data), nrow(modified.data) * p / 100)] <- ''
 
 ```
 
 Simulate Missing County Name from Address
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-orig.ds$county[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+modified.data$county[sample(nrow(modified.data), nrow(modified.data) * p / 100)] <- ''
 
 ```
 
 Simulate Missing City Name from Address
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-orig.ds$cityname[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
+modified.data$cityname[sample(nrow(modified.data), nrow(modified.data) * p / 100)] <- ''
 
 ```
 
@@ -177,7 +188,7 @@ orig.ds$cityname[sample(nrow(orig.ds), nrow(orig.ds) * p / 100)] <- ''
 Write the sanitized file into a .csv format to be reused later.  
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-write.csv(orig.ds,file="data/orig.ds.real.csv", row.names = FALSE ,quote=c(1:15) )
+write.csv(modified.data,file="data/exp3.modified.data.csv", row.names = FALSE ,quote=c(1:15) )
 
 ```
 

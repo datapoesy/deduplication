@@ -1,0 +1,7 @@
+"","id","X_recoid_","X_someid_","X_firstname_","X_lastname_","X_gender_","X_birth_date_","X_email_","X_mnumber_","X_hnumber_","X_addr1_","X_addr2_","X_cityname_","X_postcode_","X_county_","X_nis_","X_b_year_","X_b_month_","X_b_day_","is_match","Class","Weight"
+"1","542","199349 D","3.972737e+17","Nyah Strack","Murazik","female","1981-11-14","johns.vicente@yahoo.com","4142944529","4300468860","Suite 297","Chaya Road","","","","DB6510058","81","11","14","","",""
+"2","777","199349","8.89e+17","Nyah Stracke","Murazik","female","1981-11-14","johns.vicente@yahoo.com","4142944529","4300468860","Suite 297","Chaya Road","Madisyntown","","Oregon","DB6510058","81","11","14",NA,"L","0.7363795"
+"3","","","","","","","","","","","","","","","","","","","","","",""
+"4","210","153959 D","9.692889e+17","Mr. Max Brakus DDS","Wisoky","male","1977-02-04","alfonso.hahn@purdy.org","2582918596","3242788505","","Douglas Divide","West Marcellemouth","","Oklahoma","","77"," 2"," 4","","",""
+"5","322","153959","2.85e+17","Mr. Max Brakus DDS","Wisoky","male","1977-02-04","alfonso.hahn@purdy.org","2582918596",NA,"Suite 550","Douglas Divide","","BD8 8CD","Oklahoma","CC2991222","77"," 2"," 4",NA,"L","0.5977497"
+"6","","","","","","","","","","","","","","","","","","","","","",""

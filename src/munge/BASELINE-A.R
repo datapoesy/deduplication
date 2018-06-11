@@ -9,24 +9,20 @@ source("lib/helpers.R")
 
 ## Set the count of records in the dataset
 
-desc.base.ds <- read.csv(file="rdscsvfiles/desc.base.ds.csv")[,-c(1)]
-
-
+desc.base.ds <- read.csv(file="desc.base.ds.csv")[,-c(1)]
 
 perc.value <- c(5, 10, 20, 30, 40,50,60)
 
 i = 1
 ds.count <- perc.value[i]*1000
 
-set.seed(1234)
+
 
 ## Sample dataset from the original 200K records
 #ds.00 <-  base.ds[sample(nrow(base.ds),ds.count),]
 
 ds.00 <- read.csv(file="data/base.ds.200k.csv", stringsAsFactors = FALSE)[,-c(1)]
 
-## set a percentage value for data to be disorganized
-p <- 4
 
 ## create a data frame to store duplicated records
 dupli.ds <- data.frame(matrix(0, ncol = ncol(ds.00), nrow = 0))
@@ -46,6 +42,7 @@ non.dupli.ds <- dupli.ds
 #-------------------------------------------------------------------------
 
 ###Clone  records with same  address
+p <- 20
 temp.ds <- clonePerson(ds.00, p)
 dupli.ds <- rbind(dupli.ds, temp.ds$clones)
 
@@ -54,7 +51,7 @@ dupli.ds <- dupli.ds[!duplicated(dupli.ds$recoid),]
 
 ###Duplicate Records for identical Twins living in the same address,
 ## also pass the list of record ids that has been used.
-pt <- 0.06*p
+pt <- 1.25
 
 temp.ds <- createTwins(temp.ds$ds.99, pt)
 non.dupli.ds <- rbind(non.dupli.ds, temp.ds$twins) # Non-duplicates means individual people
@@ -64,7 +61,7 @@ non.dupli.ds <- non.dupli.ds[!duplicated(non.dupli.ds$recoid),]
 
 ###Duplicate Records for neighbors living in the same apartment,
 ## also pass the list of record ids that has been used.
-pn <- 0.01*p
+pn <- 0.20
 temp.ds <- createNeighbors(temp.ds$ds.99, pn)
 non.dupli.ds <- rbind(non.dupli.ds, temp.ds$neighbors) # Non-duplicates means individual people
 non.dupli.ds <- non.dupli.ds[!duplicated(non.dupli.ds$recoid),]
@@ -73,7 +70,7 @@ non.dupli.ds <- non.dupli.ds[!duplicated(non.dupli.ds$recoid),]
 # % of couples in the loan availing population = 50%
 # % of couples living in the same address = 80%
 # Combined percentage of the above = 40%
-pc <- 4*p
+pc <- 35
 temp.ds <- createCouples(temp.ds$ds.99, pc)
 non.dupli.ds <- rbind(non.dupli.ds, temp.ds$couples)
 
@@ -85,7 +82,7 @@ record.count <- nrow(ds.00)
 
 #---------------------------------------------------------------
 
-pe <- .01* p 
+pe <- 0.20
 ###Create Typographical errors name to simulate spelling mistakes
 ds.00 <- makeTypos(ds.00, "John", "Jon", pe)
 ds.00 <- makeTypos(ds.00, "Thompson", "Thomson", pe)
@@ -117,7 +114,7 @@ ds.00$county[sample(nrow(ds.00), nrow(ds.00) * p / 100)] <- ''
 ds.00$cityname[sample(nrow(ds.00), nrow(ds.00) * p / 100)] <- ''
 
 
-#write.csv(ds.00,file="data/ds.00.200k.csv", row.names = FALSE ,quote=c(1:15) )
+write.csv(ds.00,file="data/exp5.modified.data.csv", row.names = FALSE ,quote=c(1:15) )
 
 #==================================================================
 #This is for the report:

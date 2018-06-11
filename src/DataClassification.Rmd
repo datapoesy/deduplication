@@ -24,7 +24,7 @@ xclass <- c("factor","factor","factor","factor","factor",
 
 getwd()
 ## Read the sanitized dataset
-base.ds <- read.csv(file="data/orig.ds.real.csv", stringsAsFactors = TRUE)
+base.ds <- read.csv(file="data/exp2.modified.data.csv", stringsAsFactors = TRUE)
 
 base.ds <- base.ds[,c(-1)] #dropping the  first column
 ```
@@ -106,7 +106,7 @@ data.quality <- round(alt.ds.count/ds.count *100,2)
 ```
 
 
-#####Supervised clasification with Minimal Training Set
+#####Create a dataframe to store the results
 
 ```{r}
 #cl.results.00 <- as.data.frame(matrix(0,ncol=9,nrow=1))

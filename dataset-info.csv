@@ -1,7 +1,0 @@
-"","No.","record.count","file.name","time.taken"
-"1",1,20000,"ff-based/rpairs.00-20k.rds",7.19342358112335
-"2",2,40000,"ff-based/rpairs.00-40k.rds",29.1571006178856
-"3",3,80000,"ff-based/rpairs.00-80k.rds",2.0611328985956
-"4",4,1000,"ff-based/rpairs.00-100k.rds",4.77206206321716
-"5",NA,NA,NA,NA
-"6",6,60000,"ff-based/rpairs.00-60k.rds",1.08673643781079
